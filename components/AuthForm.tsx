@@ -9,6 +9,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import FormField from "@/components/FormField";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase/client";
+import { signup } from "@/lib/actions/auth.action";
 
 
 const authFormSchema=(type: FormType)=>{
@@ -33,11 +36,25 @@ const AuthForm = ({ type }: { type: FormType }) => {
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     try{
       if(type==='sign-up'){
+        const {name,email,password} = values;
+        const userCredentials = await createUserWithEmailAndPassword(auth,email,password);
+        const result = await signup({
+          uid:userCredentials.user.uid,
+          name:name!,
+          email,
+          password,
+        }) 
+
+        if(!result ?.success){
+          toast.error(result ?.message);
+          return;
+        }
+
         toast.success('Account Created Successfully. Please Sign in');
         router.push('/sign-in');
       }else{
